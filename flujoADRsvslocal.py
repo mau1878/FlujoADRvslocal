@@ -67,7 +67,7 @@ def add_watermark(fig, text="MTaurus - X:mtaurus_ok"):
     return fig
 
 def main():
-    st.title("Comparación de Volumen en Dólares por Acción")
+    st.title("Comparación de Volumen en Dólares del conjunto de ADRs, del Panel Líder y del Panel General")
 
     today = datetime.today().date()
     selected_date = st.date_input("Selecciona una fecha", today)
