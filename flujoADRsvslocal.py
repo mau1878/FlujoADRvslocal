@@ -50,7 +50,7 @@ def fetch_price_volume(tickers, selected_date):
             st.write(f"Processing ticker: {ticker_symbol}")  # Debugging line
         price, volume = get_valid_date(ticker, selected_date)
         if price is not None and volume is not None:
-            data.append({'Ticker': ticker_symbol, 'Price': price, 'Volume': volume})
+            data.append({'Ticker': ticker_symbol, 'Price': price, 'Volume': volume, 'Group': group_name})
         else:
             failed_tickers.append(ticker_symbol)
     df = pd.DataFrame(data)
@@ -166,6 +166,30 @@ def main():
             color_continuous_scale='Viridis'
         )
         st.plotly_chart(fig, use_container_width=True)
+
+        # Prepare detailed data for the second treemap
+        detailed_data = []
+        for ticker_list, group_name in [(adrs_tickers, 'ADRs'), (panel_lider_tickers, 'Panel Líder'), (panel_general_tickers, 'Panel General')]:
+            df, failed = fetch_price_volume(ticker_list, selected_date)
+            if not df.empty:
+                df['Group'] = group_name
+                detailed_data.append(df)
+
+        detailed_df = pd.concat(detailed_data, ignore_index=True)
+        if not detailed_df.empty:
+            # Display second treemap
+            st.markdown("### Detailed Tree Map of Tickers within Groups")
+            fig_detailed = px.treemap(
+                detailed_df, 
+                path=['Group', 'Ticker'], 
+                values='Price', 
+                title="Detailed View of Tickes within Groups",
+                color='Price', 
+                color_continuous_scale='Viridis'
+            )
+            st.plotly_chart(fig_detailed, use_container_width=True)
+        else:
+            st.warning("No detailed data available for the tickers.")
 
 if __name__ == "__main__":
     main()
