@@ -66,14 +66,39 @@ def add_watermark(fig, text="MTaurus - X:mtaurus_ok"):
     )
     return fig
 
+def generate_bar_chart(adrs_value, panel_lider_value, panel_general_value, title_font_size, axis_font_size, label_font_size, date_str):
+    fig = px.bar(
+        x=["ADRs", "Panel Líder", "Panel General"],
+        y=[adrs_value, panel_lider_value, panel_general_value],
+        labels={"x": "Categoría", "y": "Volumen en USD"},
+        title=f"Comparación de Volumen en Dólares por Acción ({date_str})",
+        color=["ADRs", "Panel Líder", "Panel General"],
+        color_discrete_map={"ADRs": "blue", "Panel Líder": "green", "Panel General": "red"}
+    )
+    fig.update_layout(
+        title_text=f'Comparación de Volumen en Dólares total para ADRs/Panel Líder/Panel General ({date_str})',
+        title_font_size=title_font_size,
+        xaxis_title='Categoría',
+        xaxis_title_font_size=label_font_size,
+        yaxis_title='Volumen en USD',
+        yaxis_title_font_size=label_font_size,
+        xaxis_tickfont_size=axis_font_size,
+        yaxis_tickfont_size=axis_font_size,
+        xaxis_title_font=dict(size=label_font_size),
+        yaxis_title_font=dict(size=label_font_size)
+    )
+    return add_watermark(fig)
+
 def main():
     st.title("Comparación de Volumen en Dólares del conjunto de ADRs, del Panel Líder y del Panel General")
 
     today = datetime.today().date()
-    selected_date = st.date_input("Selecciona una fecha", today)
     
-    if selected_date > today:
-        st.error("La fecha seleccionada no puede estar en el futuro.")
+    selected_date_1 = st.date_input("Selecciona la primera fecha", today)
+    selected_date_2 = st.date_input("Selecciona la segunda fecha", today)
+
+    if selected_date_1 > today or selected_date_2 > today:
+        st.error("Las fechas seleccionadas no pueden estar en el futuro.")
         return
 
     title_font_size = st.slider("Tamaño de fuente del título", 10, 50, 24)
@@ -96,80 +121,31 @@ def main():
             'ROSE.BA', 'RIGO.BA', 'DGCE.BA', 'MTR.BA', 'HSAT.BA'
         ]
 
-        st.markdown("### Obtención de datos ADRs...")
-        adrs_df, adrs_failed = fetch_price_volume(adrs_tickers, selected_date)
-        if not adrs_df.empty:
-            adrs_value = calculate_sum(adrs_df)
-            st.success(f"Suma ADRs: USD {adrs_value:,.2f}")
-        else:
-            adrs_value = 0
-            st.warning("No hay datos disponibles para ADRs en la fecha seleccionada.")
-        
-        if adrs_failed:
-            st.warning(f"Fallo al obtener datos de ADRs: {', '.join(adrs_failed)}")
+        # Fetch and plot for the first date
+        st.markdown(f"### Datos para la fecha: {selected_date_1}")
+        adrs_df_1, _ = fetch_price_volume(adrs_tickers, selected_date_1)
+        panel_lider_df_1, _ = fetch_price_volume(panel_lider_tickers, selected_date_1)
+        panel_general_df_1, _ = fetch_price_volume(panel_general_tickers, selected_date_1)
 
-        st.markdown("### Obtención de datos Panel Líder...")
-        panel_lider_df, panel_lider_failed = fetch_price_volume(panel_lider_tickers, selected_date)
-        if not panel_lider_df.empty:
-            panel_lider_sum = calculate_sum(panel_lider_df)
-            ypfd_ratio = fetch_ypf_ratio(selected_date)
-            if ypfd_ratio:
-                panel_lider_value = panel_lider_sum / ypfd_ratio
-                st.success(f"Suma Panel Líder: USD {panel_lider_value:,.2f}")
-            else:
-                panel_lider_value = 0
-                st.error("No se pudo calcular el Panel Líder debido a un problema con la razón YPFD/YPF.")
-        else:
-            panel_lider_value = 0
-            st.warning("No hay datos disponibles para Panel Líder en la fecha seleccionada.")
-        
-        if panel_lider_failed:
-            st.warning(f"Fallo al obtener datos de Panel Líder: {', '.join(panel_lider_failed)}")
+        adrs_value_1 = calculate_sum(adrs_df_1) if not adrs_df_1.empty else 0
+        panel_lider_value_1 = calculate_sum(panel_lider_df_1) if not panel_lider_df_1.empty else 0
+        panel_general_value_1 = calculate_sum(panel_general_df_1) if not panel_general_df_1.empty else 0
 
-        st.markdown("### Obtención de datos Panel General...")
-        panel_general_df, panel_general_failed = fetch_price_volume(panel_general_tickers, selected_date)
-        if not panel_general_df.empty:
-            panel_general_sum = calculate_sum(panel_general_df)
-            ypfd_ratio = fetch_ypf_ratio(selected_date)
-            if ypfd_ratio:
-                panel_general_value = panel_general_sum / ypfd_ratio
-                st.success(f"Suma Panel General: USD {panel_general_value:,.2f}")
-            else:
-                panel_general_value = 0
-                st.error("No se pudo calcular el Panel General debido a un problema con la razón YPFD/YPF.")
-        else:
-            panel_general_value = 0
-            st.warning("No hay datos disponibles para Panel General en la fecha seleccionada.")
-        
-        if panel_general_failed:
-            st.warning(f"Fallo al obtener datos de Panel General: {', '.join(panel_general_failed)}")
+        fig_1 = generate_bar_chart(adrs_value_1, panel_lider_value_1, panel_general_value_1, title_font_size, axis_font_size, label_font_size, str(selected_date_1))
+        st.plotly_chart(fig_1)
 
-        if adrs_df.empty and panel_lider_df.empty and panel_general_df.empty:
-            st.warning("No hay datos disponibles para ninguna categoría.")
-            return
+        # Fetch and plot for the second date
+        st.markdown(f"### Datos para la fecha: {selected_date_2}")
+        adrs_df_2, _ = fetch_price_volume(adrs_tickers, selected_date_2)
+        panel_lider_df_2, _ = fetch_price_volume(panel_lider_tickers, selected_date_2)
+        panel_general_df_2, _ = fetch_price_volume(panel_general_tickers, selected_date_2)
 
-        fig = px.bar(
-            x=["ADRs", "Panel Líder", "Panel General"],
-            y=[adrs_value, panel_lider_value, panel_general_value],
-            labels={"x": "Categoría", "y": "Volumen en USD"},
-            title="Comparación de Volumen en Dólares por Acción",
-            color=["ADRs", "Panel Líder", "Panel General"],
-            color_discrete_map={"ADRs": "blue", "Panel Líder": "green", "Panel General": "red"}
-        )
-        fig.update_layout(
-            title_text='Comparación de Volumen en Dólares total para ADRs/Panel Líder/Panel General',
-            title_font_size=title_font_size,
-            xaxis_title='Categoría',
-            xaxis_title_font_size=label_font_size,
-            yaxis_title='Volumen en USD',
-            yaxis_title_font_size=label_font_size,
-            xaxis_tickfont_size=axis_font_size,
-            yaxis_tickfont_size=axis_font_size,
-            xaxis_title_font=dict(size=label_font_size),
-            yaxis_title_font=dict(size=label_font_size)
-        )
-        fig = add_watermark(fig)
-        st.plotly_chart(fig)
+        adrs_value_2 = calculate_sum(adrs_df_2) if not adrs_df_2.empty else 0
+        panel_lider_value_2 = calculate_sum(panel_lider_df_2) if not panel_lider_df_2.empty else 0
+        panel_general_value_2 = calculate_sum(panel_general_df_2) if not panel_general_df_2.empty else 0
+
+        fig_2 = generate_bar_chart(adrs_value_2, panel_lider_value_2, panel_general_value_2, title_font_size, axis_font_size, label_font_size, str(selected_date_2))
+        st.plotly_chart(fig_2)
 
 if __name__ == "__main__":
     main()
