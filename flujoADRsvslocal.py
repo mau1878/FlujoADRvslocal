@@ -98,7 +98,6 @@ def main():
 
         st.markdown("### Fetching ADRs data...")
         adrs_df, adrs_failed = fetch_price_volume(adrs_tickers, selected_date)
-        st.write(f"ADRs Data: {adrs_df}")  # Debugging line
         if not adrs_df.empty:
             adrs_value = calculate_sum(adrs_df)
             st.success(f"ADRs Sum: USD {adrs_value:,.2f}")
@@ -111,7 +110,6 @@ def main():
 
         st.markdown("### Fetching Panel Líder data...")
         panel_lider_df, panel_lider_failed = fetch_price_volume(panel_lider_tickers, selected_date)
-        st.write(f"Panel Líder Data: {panel_lider_df}")  # Debugging line
         if not panel_lider_df.empty:
             panel_lider_sum = calculate_sum(panel_lider_df)
             ypfd_ratio = fetch_ypf_ratio(selected_date)
@@ -130,7 +128,6 @@ def main():
 
         st.markdown("### Fetching Panel General data...")
         panel_general_df, panel_general_failed = fetch_price_volume(panel_general_tickers, selected_date)
-        st.write(f"Panel General Data: {panel_general_df}")  # Debugging line
         if not panel_general_df.empty:
             panel_general_sum = calculate_sum(panel_general_df)
             ypfd_ratio = fetch_ypf_ratio(selected_date)
