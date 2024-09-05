@@ -12,6 +12,7 @@ def get_valid_date(ticker, selected_date):
     end_date = selected_date + timedelta(days=1)
     try:
         ticker_data = ticker.history(start=start_date, end=end_date)
+        st.write(f"Fetched data for {ticker.ticker}: {ticker_data.head()}")  # Debugging line
         if ticker_data.empty:
             st.warning(f"No data available for {ticker.ticker} between {start_date} and {end_date}.")
             return None, None
@@ -32,6 +33,7 @@ def fetch_price_volume(tickers, selected_date):
     failed_tickers = []
     for ticker_symbol in tickers:
         ticker = yf.Ticker(ticker_symbol)
+        st.write(f"Processing ticker: {ticker_symbol}")  # Debugging line
         price, volume = get_valid_date(ticker, selected_date)
         if price is not None and volume is not None:
             data.append({'Ticker': ticker_symbol, 'Price': price, 'Volume': volume})
@@ -154,27 +156,6 @@ def main():
             hover_data={'Value (USD)': ':.2f'}
         )
         fig.update_traces(textinfo="label+value")
-        st.plotly_chart(fig, use_container_width=True)
-
-        # Plot data for comparison
-        st.markdown("### Historical Comparison")
-        comparison_data = {
-            'Category': ['ADRs', 'Panel Líder', 'Panel General'],
-            'Value (USD)': [adrs_value, panel_lider_value, panel_general_value]
-        }
-        comparison_df = pd.DataFrame(comparison_data)
-        
-        # Bar plot
-        fig = px.bar(
-            comparison_df, 
-            x='Category', 
-            y='Value (USD)', 
-            title="Comparison of ADRs, Panel Líder, and Panel General",
-            text='Value (USD)',
-            color='Value (USD)',
-            color_continuous_scale='Blues'
-        )
-        fig.update_traces(texttemplate='%{text:.2s}', textposition='outside')
         st.plotly_chart(fig, use_container_width=True)
 
 if __name__ == "__main__":
