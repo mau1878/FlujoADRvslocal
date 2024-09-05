@@ -74,95 +74,97 @@ def main():
         st.error("Selected date cannot be in the future.")
         return
 
-    # Define ticker groups
-    adrs_tickers = ['BBAR', 'BMA', 'CEPU', 'CRESY', 'EDN', 'GGAL', 'IRS', 'LOMA', 'PAM', 'SUPV', 'TEO', 'TGS', 'YPF']
-    panel_lider_tickers = [
-        'GGAL.BA', 'YPFD.BA', 'PAMP.BA', 'TXAR.BA', 'ALUA.BA', 'CRES.BA', 'SUPV.BA', 'CEPU.BA',
-        'BMA.BA', 'TGSU2.BA', 'TRAN.BA', 'EDN.BA', 'LOMA.BA', 'MIRG.BA', 'BBAR.BA', 'TGNO4.BA',
-        'COME.BA', 'IRSA.BA', 'BYMA.BA', 'TECO2.BA', 'VALO.BA'
-    ]
-    panel_general_tickers = [
-        'DGCU2.BA', 'MOLI.BA', 'CGPA2.BA', 'METR.BA', 'CECO2.BA', 'BHIP.BA', 'AGRO.BA', 'LEDE.BA',
-        'CVH.BA', 'HAVA.BA', 'AUSO.BA', 'SEMI.BA', 'INVJ.BA', 'CTIO.BA', 'MORI.BA', 'HARG.BA',
-        'GCLA.BA', 'SAMI.BA', 'BOLT.BA', 'MOLA.BA', 'CAPX.BA', 'OEST.BA', 'LONG.BA', 'GCDI.BA',
-        'GBAN.BA', 'CELU.BA', 'FERR.BA', 'CADO.BA', 'GAMI.BA', 'PATA.BA', 'CARC.BA', 'BPAT.BA',
-        'RICH.BA', 'INTR.BA', 'GARO.BA', 'FIPL.BA', 'GRIM.BA', 'DYCA.BA', 'POLL.BA', 'DOME.BA',
-        'ROSE.BA', 'RIGO.BA', 'DGCE.BA', 'MTR.BA', 'HSAT.BA'
-    ]
+    # "Enter" button for data fetching
+    if st.button("Enter to Fetch Data"):
+        # Define ticker groups
+        adrs_tickers = ['BBAR', 'BMA', 'CEPU', 'CRESY', 'EDN', 'GGAL', 'IRS', 'LOMA', 'PAM', 'SUPV', 'TEO', 'TGS', 'YPF']
+        panel_lider_tickers = [
+            'GGAL.BA', 'YPFD.BA', 'PAMP.BA', 'TXAR.BA', 'ALUA.BA', 'CRES.BA', 'SUPV.BA', 'CEPU.BA',
+            'BMA.BA', 'TGSU2.BA', 'TRAN.BA', 'EDN.BA', 'LOMA.BA', 'MIRG.BA', 'BBAR.BA', 'TGNO4.BA',
+            'COME.BA', 'IRSA.BA', 'BYMA.BA', 'TECO2.BA', 'VALO.BA'
+        ]
+        panel_general_tickers = [
+            'DGCU2.BA', 'MOLI.BA', 'CGPA2.BA', 'METR.BA', 'CECO2.BA', 'BHIP.BA', 'AGRO.BA', 'LEDE.BA',
+            'CVH.BA', 'HAVA.BA', 'AUSO.BA', 'SEMI.BA', 'INVJ.BA', 'CTIO.BA', 'MORI.BA', 'HARG.BA',
+            'GCLA.BA', 'SAMI.BA', 'BOLT.BA', 'MOLA.BA', 'CAPX.BA', 'OEST.BA', 'LONG.BA', 'GCDI.BA',
+            'GBAN.BA', 'CELU.BA', 'FERR.BA', 'CADO.BA', 'GAMI.BA', 'PATA.BA', 'CARC.BA', 'BPAT.BA',
+            'RICH.BA', 'INTR.BA', 'GARO.BA', 'FIPL.BA', 'GRIM.BA', 'DYCA.BA', 'POLL.BA', 'DOME.BA',
+            'ROSE.BA', 'RIGO.BA', 'DGCE.BA', 'MTR.BA', 'HSAT.BA'
+        ]
 
-    st.markdown("### Fetching ADRs data...")
-    adrs_df, adrs_failed = fetch_price_volume(adrs_tickers, selected_date)
-    if not adrs_df.empty:
-        adrs_value = calculate_sum(adrs_df)
-        st.success(f"ADRs Sum: USD {adrs_value:,.2f}")
-    else:
-        adrs_value = 0
-        st.warning("No ADRs data available for the selected date.")
-    
-    if adrs_failed:
-        st.warning(f"Failed to fetch ADRs tickers: {', '.join(adrs_failed)}")
+        st.markdown("### Fetching ADRs data...")
+        adrs_df, adrs_failed = fetch_price_volume(adrs_tickers, selected_date)
+        if not adrs_df.empty:
+            adrs_value = calculate_sum(adrs_df)
+            st.success(f"ADRs Sum: USD {adrs_value:,.2f}")
+        else:
+            adrs_value = 0
+            st.warning("No ADRs data available for the selected date.")
+        
+        if adrs_failed:
+            st.warning(f"Failed to fetch ADRs tickers: {', '.join(adrs_failed)}")
 
-    st.markdown("### Fetching Panel Líder data...")
-    panel_lider_df, panel_lider_failed = fetch_price_volume(panel_lider_tickers, selected_date)
-    if not panel_lider_df.empty:
-        panel_lider_sum = calculate_sum(panel_lider_df)
-        ypfd_ratio = fetch_ypf_ratio(selected_date)
-        if ypfd_ratio:
-            panel_lider_value = panel_lider_sum / ypfd_ratio
-            st.success(f"Panel Líder Sum: USD {panel_lider_value:,.2f}")
+        st.markdown("### Fetching Panel Líder data...")
+        panel_lider_df, panel_lider_failed = fetch_price_volume(panel_lider_tickers, selected_date)
+        if not panel_lider_df.empty:
+            panel_lider_sum = calculate_sum(panel_lider_df)
+            ypfd_ratio = fetch_ypf_ratio(selected_date)
+            if ypfd_ratio:
+                panel_lider_value = panel_lider_sum / ypfd_ratio
+                st.success(f"Panel Líder Sum: USD {panel_lider_value:,.2f}")
+            else:
+                panel_lider_value = 0
+                st.error("Could not calculate Panel Líder due to YPFD/YPF ratio issue.")
         else:
             panel_lider_value = 0
-            st.error("Could not calculate Panel Líder due to YPFD/YPF ratio issue.")
-    else:
-        panel_lider_value = 0
-        st.warning("No Panel Líder data available for the selected date.")
-    
-    if panel_lider_failed:
-        st.warning(f"Failed to fetch Panel Líder tickers: {', '.join(panel_lider_failed)}")
+            st.warning("No Panel Líder data available for the selected date.")
+        
+        if panel_lider_failed:
+            st.warning(f"Failed to fetch Panel Líder tickers: {', '.join(panel_lider_failed)}")
 
-    st.markdown("### Fetching Panel General data...")
-    panel_general_df, panel_general_failed = fetch_price_volume(panel_general_tickers, selected_date)
-    if not panel_general_df.empty:
-        panel_general_sum = calculate_sum(panel_general_df)
-        ypfd_ratio = fetch_ypf_ratio(selected_date)
-        if ypfd_ratio:
-            panel_general_value = panel_general_sum / ypfd_ratio
-            st.success(f"Panel General Sum: USD {panel_general_value:,.2f}")
+        st.markdown("### Fetching Panel General data...")
+        panel_general_df, panel_general_failed = fetch_price_volume(panel_general_tickers, selected_date)
+        if not panel_general_df.empty:
+            panel_general_sum = calculate_sum(panel_general_df)
+            ypfd_ratio = fetch_ypf_ratio(selected_date)
+            if ypfd_ratio:
+                panel_general_value = panel_general_sum / ypfd_ratio
+                st.success(f"Panel General Sum: USD {panel_general_value:,.2f}")
+            else:
+                panel_general_value = 0
+                st.error("Could not calculate Panel General due to YPFD/YPF ratio issue.")
         else:
             panel_general_value = 0
-            st.error("Could not calculate Panel General due to YPFD/YPF ratio issue.")
-    else:
-        panel_general_value = 0
-        st.warning("No Panel General data available for the selected date.")
-    
-    if panel_general_failed:
-        st.warning(f"Failed to fetch Panel General tickers: {', '.join(panel_general_failed)}")
+            st.warning("No Panel General data available for the selected date.")
+        
+        if panel_general_failed:
+            st.warning(f"Failed to fetch Panel General tickers: {', '.join(panel_general_failed)}")
 
-    # Prepare data for treemap
-    treemap_data = {
-        'Category': ['ADRs', 'Panel Líder', 'Panel General'],
-        'Value (USD)': [adrs_value, panel_lider_value, panel_general_value]
-    }
-    treemap_df = pd.DataFrame(treemap_data)
+        # Prepare data for treemap
+        treemap_data = {
+            'Category': ['ADRs', 'Panel Líder', 'Panel General'],
+            'Value (USD)': [adrs_value, panel_lider_value, panel_general_value]
+        }
+        treemap_df = pd.DataFrame(treemap_data)
 
-    # Display treemap
-    st.markdown("### Tree Map of Values")
-    fig = px.treemap(
-        treemap_df, 
-        path=['Category'], 
-        values='Value (USD)', 
-        title="Comparison of ADRs, Panel Líder, and Panel General",
-        color='Value (USD)', 
-        color_continuous_scale='Blues',
-        hover_data={'Value (USD)': ':.2f'}
-    )
-    fig.update_traces(textinfo="label+value")
-    st.plotly_chart(fig, use_container_width=True)
+        # Display treemap
+        st.markdown("### Tree Map of Values")
+        fig = px.treemap(
+            treemap_df, 
+            path=['Category'], 
+            values='Value (USD)', 
+            title="Comparison of ADRs, Panel Líder, and Panel General",
+            color='Value (USD)', 
+            color_continuous_scale='Blues',
+            hover_data={'Value (USD)': ':.2f'}
+        )
+        fig.update_traces(textinfo="label+value")
+        st.plotly_chart(fig, use_container_width=True)
 
-    # Optional: Display summary table
-    st.markdown("### Summary of Values")
-    treemap_df['Value (USD)'] = treemap_df['Value (USD)'].apply(lambda x: f"USD {x:,.2f}")
-    st.table(treemap_df)
+        # Optional: Display summary table
+        st.markdown("### Summary of Values")
+        treemap_df['Value (USD)'] = treemap_df['Value (USD)'].apply(lambda x: f"USD {x:,.2f}")
+        st.table(treemap_df)
 
 if __name__ == "__main__":
     main()
