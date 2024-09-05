@@ -4,9 +4,6 @@ import plotly.express as px
 import pandas as pd
 from datetime import datetime, timedelta
 
-# Toggle debug mode
-DEBUG_MODE = False  # Set to True to enable debug information
-
 def get_valid_date(ticker, selected_date):
     """
     Fetches the latest available trading date for the ticker on or before the selected date.
@@ -15,16 +12,14 @@ def get_valid_date(ticker, selected_date):
     end_date = selected_date + timedelta(days=1)
     try:
         ticker_data = ticker.history(start=start_date, end=end_date)
-        if DEBUG_MODE:
-            st.write(f"Fetched data for {ticker.ticker}: {ticker_data.head()}")  # Debugging line
+        st.write(f"Fetched data for {ticker.ticker}: {ticker_data.head()}")  # Debugging line
         
         if ticker_data.empty:
             st.warning(f"No data available for {ticker.ticker} between {start_date} and {end_date}.")
             return None, None
         
         # Debug: Print available columns
-        if DEBUG_MODE:
-            st.write(f"Available columns for {ticker.ticker}: {ticker_data.columns}")
+        st.write(f"Available columns for {ticker.ticker}: {ticker_data.columns}")
         
         # Check if 'Adj Close' exists, if not use the 'Close' column
         price_col = 'Adj Close' if 'Adj Close' in ticker_data.columns else 'Close'
@@ -46,8 +41,7 @@ def fetch_price_volume(tickers, selected_date):
     failed_tickers = []
     for ticker_symbol in tickers:
         ticker = yf.Ticker(ticker_symbol)
-        if DEBUG_MODE:
-            st.write(f"Processing ticker: {ticker_symbol}")  # Debugging line
+        st.write(f"Processing ticker: {ticker_symbol}")  # Debugging line
         price, volume = get_valid_date(ticker, selected_date)
         if price is not None and volume is not None:
             data.append({'Ticker': ticker_symbol, 'Price': price, 'Volume': volume})
@@ -74,6 +68,24 @@ def fetch_ypf_ratio(selected_date):
         return None
     return ypfd_price / ypf_price
 
+def add_watermark(fig, text="MTaurus - X:mtaurus_ok"):
+    """
+    Adds a watermark to the Plotly figure.
+    """
+    fig.update_layout(
+        annotations=[
+            dict(
+                text=text,
+                xref="paper", yref="paper",
+                x=0.99, y=0.01,
+                showarrow=False,
+                font=dict(size=12, color="grey"),
+                align="right"
+            )
+        ]
+    )
+    return fig
+
 def main():
     st.title("Stock Volume-Weighted Price Comparison")
 
@@ -83,6 +95,11 @@ def main():
     if selected_date > today:
         st.error("Selected date cannot be in the future.")
         return
+
+    # Font size controls
+    title_font_size = st.slider("Title Font Size", 10, 50, 24)
+    axis_font_size = st.slider("Axis Font Size", 10, 50, 18)
+    label_font_size = st.slider("Label Font Size", 10, 50, 14)
 
     if st.button("Fetch Data"):
         adrs_tickers = ['BBAR', 'BMA', 'CEPU', 'CRESY', 'EDN', 'GGAL', 'IRS', 'LOMA', 'PAM', 'SUPV', 'TEO', 'TGS', 'YPF']
@@ -102,6 +119,7 @@ def main():
 
         st.markdown("### Fetching ADRs data...")
         adrs_df, adrs_failed = fetch_price_volume(adrs_tickers, selected_date)
+        st.write(f"ADRs Data: {adrs_df}")  # Debugging line
         if not adrs_df.empty:
             adrs_value = calculate_sum(adrs_df)
             st.success(f"ADRs Sum: USD {adrs_value:,.2f}")
@@ -114,6 +132,7 @@ def main():
 
         st.markdown("### Fetching Panel Líder data...")
         panel_lider_df, panel_lider_failed = fetch_price_volume(panel_lider_tickers, selected_date)
+        st.write(f"Panel Líder Data: {panel_lider_df}")  # Debugging line
         if not panel_lider_df.empty:
             panel_lider_sum = calculate_sum(panel_lider_df)
             ypfd_ratio = fetch_ypf_ratio(selected_date)
@@ -132,6 +151,7 @@ def main():
 
         st.markdown("### Fetching Panel General data...")
         panel_general_df, panel_general_failed = fetch_price_volume(panel_general_tickers, selected_date)
+        st.write(f"Panel General Data: {panel_general_df}")  # Debugging line
         if not panel_general_df.empty:
             panel_general_sum = calculate_sum(panel_general_df)
             ypfd_ratio = fetch_ypf_ratio(selected_date)
@@ -148,24 +168,25 @@ def main():
         if panel_general_failed:
             st.warning(f"Failed to fetch Panel General tickers: {', '.join(panel_general_failed)}")
 
-        # Prepare data for treemap
-        treemap_data = {
-            'Category': ['ADRs', 'Panel Líder', 'Panel General'],
-            'Value (USD)': [adrs_value, panel_lider_value, panel_general_value]
-        }
-        treemap_df = pd.DataFrame(treemap_data)
-
-        # Display treemap
-        st.markdown("### Tree Map of Values")
-        fig = px.treemap(
-            treemap_df, 
-            path=['Category'], 
-            values='Value (USD)', 
-            title="Comparison of ADRs, Panel Líder, and Panel General",
-            color='Value (USD)', 
-            color_continuous_scale='Viridis'
-        )
-        st.plotly_chart(fig, use_container_width=True)
+        # Plotting
+        if not adrs_df.empty or not panel_lider_df.empty or not panel_general_df.empty:
+            fig = px.bar(
+                x=["ADRs", "Panel Líder", "Panel General"],
+                y=[adrs_value, panel_lider_value, panel_general_value],
+                labels={"x": "Category", "y": "Value in USD"},
+                title="Stock Value Comparison",
+                color=["ADRs", "Panel Líder", "Panel General"],
+                color_discrete_map={"ADRs": "blue", "Panel Líder": "green", "Panel General": "red"}
+            )
+            fig.update_layout(
+                title_font_size=title_font_size,
+                xaxis_title_font_size=axis_font_size,
+                yaxis_title_font_size=axis_font_size,
+                legend_font_size=label_font_size,
+                font=dict(size=label_font_size)
+            )
+            fig = add_watermark(fig)
+            st.plotly_chart(fig, use_container_width=True)
 
 if __name__ == "__main__":
     main()
