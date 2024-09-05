@@ -37,7 +37,7 @@ def get_valid_date(ticker, selected_date):
         st.warning(f"Error fetching data for {ticker.ticker}: {e}")
         return None, None
 
-def fetch_price_volume(tickers, selected_date, group_name):
+def fetch_price_volume(tickers, selected_date):
     """
     Fetches the price and volume for each ticker on the selected date or the closest previous date.
     Returns a DataFrame with tickers, prices, and volumes.
@@ -50,7 +50,7 @@ def fetch_price_volume(tickers, selected_date, group_name):
             st.write(f"Processing ticker: {ticker_symbol}")  # Debugging line
         price, volume = get_valid_date(ticker, selected_date)
         if price is not None and volume is not None:
-            data.append({'Ticker': ticker_symbol, 'Price': price, 'Volume': volume, 'Group': group_name})
+            data.append({'Ticker': ticker_symbol, 'Price': price, 'Volume': volume})
         else:
             failed_tickers.append(ticker_symbol)
     df = pd.DataFrame(data)
@@ -100,55 +100,72 @@ def main():
             'ROSE.BA', 'RIGO.BA', 'DGCE.BA', 'MTR.BA', 'HSAT.BA'
         ]
 
-        # Fetch data
         st.markdown("### Fetching ADRs data...")
-        adrs_df, adrs_failed = fetch_price_volume(adrs_tickers, selected_date, 'ADRs')
-        
-        st.markdown("### Fetching Panel Lider data...")
-        panel_lider_df, panel_lider_failed = fetch_price_volume(panel_lider_tickers, selected_date, 'Panel Lider')
-        
-        st.markdown("### Fetching Panel General data...")
-        panel_general_df, panel_general_failed = fetch_price_volume(panel_general_tickers, selected_date, 'Panel General')
-
-        # Concatenate all dataframes for treemaps
-        all_data = pd.concat([adrs_df, panel_lider_df, panel_general_df], ignore_index=True)
-
-        # Display first treemap
-        if not all_data.empty:
-            st.markdown("### Tree Map of Groups")
-            fig_group = px.treemap(
-                all_data, 
-                path=['Group'], 
-                values='Price', 
-                title="Tree Map of Groups",
-                color='Price', 
-                color_continuous_scale='Viridis'
-            )
-            st.plotly_chart(fig_group, use_container_width=True)
-
-            # Detailed data for second treemap
-            detailed_data = []
-            for group_name in all_data['Group'].unique():
-                group_df = all_data[all_data['Group'] == group_name]
-                if not group_df.empty:
-                    detailed_data.append(group_df)
-            
-            if detailed_data:
-                detailed_df = pd.concat(detailed_data, ignore_index=True)
-                st.markdown("### Detailed Tree Map of Tickers within Groups")
-                fig_detailed = px.treemap(
-                    detailed_df, 
-                    path=['Group', 'Ticker'], 
-                    values='Price', 
-                    title="Detailed View of Tickers within Groups",
-                    color='Price', 
-                    color_continuous_scale='Viridis'
-                )
-                st.plotly_chart(fig_detailed, use_container_width=True)
-            else:
-                st.warning("No detailed data available for the tickers.")
+        adrs_df, adrs_failed = fetch_price_volume(adrs_tickers, selected_date)
+        if not adrs_df.empty:
+            adrs_value = calculate_sum(adrs_df)
+            st.success(f"ADRs Sum: USD {adrs_value:,.2f}")
         else:
-            st.warning("No data available for the selected date.")
+            adrs_value = 0
+            st.warning("No ADRs data available for the selected date.")
+        
+        if adrs_failed:
+            st.warning(f"Failed to fetch ADRs tickers: {', '.join(adrs_failed)}")
+
+        st.markdown("### Fetching Panel Líder data...")
+        panel_lider_df, panel_lider_failed = fetch_price_volume(panel_lider_tickers, selected_date)
+        if not panel_lider_df.empty:
+            panel_lider_sum = calculate_sum(panel_lider_df)
+            ypfd_ratio = fetch_ypf_ratio(selected_date)
+            if ypfd_ratio:
+                panel_lider_value = panel_lider_sum / ypfd_ratio
+                st.success(f"Panel Líder Sum: USD {panel_lider_value:,.2f}")
+            else:
+                panel_lider_value = 0
+                st.error("Could not calculate Panel Líder due to YPFD/YPF ratio issue.")
+        else:
+            panel_lider_value = 0
+            st.warning("No Panel Líder data available for the selected date.")
+        
+        if panel_lider_failed:
+            st.warning(f"Failed to fetch Panel Líder tickers: {', '.join(panel_lider_failed)}")
+
+        st.markdown("### Fetching Panel General data...")
+        panel_general_df, panel_general_failed = fetch_price_volume(panel_general_tickers, selected_date)
+        if not panel_general_df.empty:
+            panel_general_sum = calculate_sum(panel_general_df)
+            ypfd_ratio = fetch_ypf_ratio(selected_date)
+            if ypfd_ratio:
+                panel_general_value = panel_general_sum / ypfd_ratio
+                st.success(f"Panel General Sum: USD {panel_general_value:,.2f}")
+            else:
+                panel_general_value = 0
+                st.error("Could not calculate Panel General due to YPFD/YPF ratio issue.")
+        else:
+            panel_general_value = 0
+            st.warning("No Panel General data available for the selected date.")
+        
+        if panel_general_failed:
+            st.warning(f"Failed to fetch Panel General tickers: {', '.join(panel_general_failed)}")
+
+        # Prepare data for treemap
+        treemap_data = {
+            'Category': ['ADRs', 'Panel Líder', 'Panel General'],
+            'Value (USD)': [adrs_value, panel_lider_value, panel_general_value]
+        }
+        treemap_df = pd.DataFrame(treemap_data)
+
+        # Display treemap
+        st.markdown("### Tree Map of Values")
+        fig = px.treemap(
+            treemap_df, 
+            path=['Category'], 
+            values='Value (USD)', 
+            title="Comparison of ADRs, Panel Líder, and Panel General",
+            color='Value (USD)', 
+            color_continuous_scale='Viridis'
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
 if __name__ == "__main__":
     main()
