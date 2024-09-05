@@ -12,14 +12,10 @@ def get_valid_date(ticker, selected_date):
     end_date = selected_date + timedelta(days=1)
     try:
         ticker_data = ticker.history(start=start_date, end=end_date)
-        st.write(f"Fetched data for {ticker.ticker}: {ticker_data.head()}")  # Debugging line
         
         if ticker_data.empty:
             st.warning(f"No data available for {ticker.ticker} between {start_date} and {end_date}.")
             return None, None
-        
-        # Debug: Print available columns
-        st.write(f"Available columns for {ticker.ticker}: {ticker_data.columns}")
         
         # Check if 'Adj Close' exists, if not use the 'Close' column
         price_col = 'Adj Close' if 'Adj Close' in ticker_data.columns else 'Close'
@@ -41,7 +37,6 @@ def fetch_price_volume(tickers, selected_date):
     failed_tickers = []
     for ticker_symbol in tickers:
         ticker = yf.Ticker(ticker_symbol)
-        st.write(f"Processing ticker: {ticker_symbol}")  # Debugging line
         price, volume = get_valid_date(ticker, selected_date)
         if price is not None and volume is not None:
             data.append({'Ticker': ticker_symbol, 'Price': price, 'Volume': volume})
@@ -119,7 +114,6 @@ def main():
 
         st.markdown("### Fetching ADRs data...")
         adrs_df, adrs_failed = fetch_price_volume(adrs_tickers, selected_date)
-        st.write(f"ADRs Data: {adrs_df}")  # Debugging line
         if not adrs_df.empty:
             adrs_value = calculate_sum(adrs_df)
             st.success(f"ADRs Sum: USD {adrs_value:,.2f}")
@@ -132,7 +126,6 @@ def main():
 
         st.markdown("### Fetching Panel Líder data...")
         panel_lider_df, panel_lider_failed = fetch_price_volume(panel_lider_tickers, selected_date)
-        st.write(f"Panel Líder Data: {panel_lider_df}")  # Debugging line
         if not panel_lider_df.empty:
             panel_lider_sum = calculate_sum(panel_lider_df)
             ypfd_ratio = fetch_ypf_ratio(selected_date)
@@ -151,7 +144,6 @@ def main():
 
         st.markdown("### Fetching Panel General data...")
         panel_general_df, panel_general_failed = fetch_price_volume(panel_general_tickers, selected_date)
-        st.write(f"Panel General Data: {panel_general_df}")  # Debugging line
         if not panel_general_df.empty:
             panel_general_sum = calculate_sum(panel_general_df)
             ypfd_ratio = fetch_ypf_ratio(selected_date)
@@ -187,6 +179,3 @@ def main():
             )
             fig = add_watermark(fig)
             st.plotly_chart(fig, use_container_width=True)
-
-if __name__ == "__main__":
-    main()
