@@ -9,7 +9,6 @@ def get_valid_date(ticker, selected_date):
     """
     Fetches the latest available trading date for the ticker on or before the selected date.
     """
-    # Fetch data for the selected date and up to 7 days before
     start_date = selected_date - timedelta(days=7)
     end_date = selected_date + timedelta(days=1)  # Include the selected date
     try:
@@ -20,6 +19,9 @@ def get_valid_date(ticker, selected_date):
         price = ticker_data['Adj Close'].loc[latest_valid_date]
         volume = ticker_data['Volume'].loc[latest_valid_date]
         return price, volume
+    except KeyError as e:
+        st.warning(f"Error fetching data for {ticker.ticker}: Missing {e}")
+        return None, None
     except Exception as e:
         st.warning(f"Error fetching data for {ticker.ticker}: {e}")
         return None, None
@@ -44,7 +46,9 @@ def fetch_price_volume(tickers, selected_date):
 
 # Function to calculate the sum of price * volume
 def calculate_sum(df):
-    return (df['Price'] * df['Volume']).sum()
+    if not df.empty:
+        return (df['Price'] * df['Volume']).sum()
+    return 0
 
 # Function to fetch YPFD/YPF ratio
 def fetch_ypf_ratio(selected_date):
@@ -59,6 +63,9 @@ def fetch_ypf_ratio(selected_date):
     
     if ypf_price is None or ypfd_price is None:
         st.error("Could not retrieve YPF or YPFD.BA data for the selected date.")
+        return None
+    if ypf_price == 0:
+        st.error("YPF price is zero, cannot compute ratio.")
         return None
     return ypfd_price / ypf_price
 
@@ -149,22 +156,20 @@ def main():
 
         # Display treemap
         st.markdown("### Tree Map of Values")
-        fig = px.treemap(
-            treemap_df, 
-            path=['Category'], 
-            values='Value (USD)', 
-            title="Comparison of ADRs, Panel Líder, and Panel General",
-            color='Value (USD)', 
-            color_continuous_scale='Blues',
-            hover_data={'Value (USD)': ':.2f'}
-        )
-        fig.update_traces(textinfo="label+value")
-        st.plotly_chart(fig, use_container_width=True)
-
-        # Optional: Display summary table
-        st.markdown("### Summary of Values")
-        treemap_df['Value (USD)'] = treemap_df['Value (USD)'].apply(lambda x: f"USD {x:,.2f}")
-        st.table(treemap_df)
+        try:
+            fig = px.treemap(
+                treemap_df, 
+                path=['Category'], 
+                values='Value (USD)', 
+                title="Comparison of ADRs, Panel Líder, and Panel General",
+                color='Value (USD)', 
+                color_continuous_scale='Blues',
+                hover_data={'Value (USD)': ':.2f'}
+            )
+            fig.update_traces(root_color='lightblue', selector=dict(type='treemap'))
+            st.plotly_chart(fig)
+        except ZeroDivisionError:
+            st.error("Error displaying tree map. Division by zero occurred.")
 
 if __name__ == "__main__":
     main()
