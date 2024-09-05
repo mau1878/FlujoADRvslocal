@@ -4,13 +4,12 @@ import plotly.express as px
 import pandas as pd
 from datetime import datetime, timedelta
 
-# Function to fetch the latest available date on or before the selected date
 def get_valid_date(ticker, selected_date):
     """
     Fetches the latest available trading date for the ticker on or before the selected date.
     """
     start_date = selected_date - timedelta(days=7)
-    end_date = selected_date + timedelta(days=1)  # Include the selected date
+    end_date = selected_date + timedelta(days=1)
     try:
         ticker_data = ticker.history(start=start_date, end=end_date)
         if ticker_data.empty:
@@ -19,14 +18,10 @@ def get_valid_date(ticker, selected_date):
         price = ticker_data['Adj Close'].loc[latest_valid_date]
         volume = ticker_data['Volume'].loc[latest_valid_date]
         return price, volume
-    except KeyError as e:
-        st.warning(f"Error fetching data for {ticker.ticker}: Missing {e}")
-        return None, None
     except Exception as e:
         st.warning(f"Error fetching data for {ticker.ticker}: {e}")
         return None, None
 
-# Function to fetch price and volume for a list of tickers
 def fetch_price_volume(tickers, selected_date):
     """
     Fetches the price and volume for each ticker on the selected date or the closest previous date.
@@ -44,13 +39,9 @@ def fetch_price_volume(tickers, selected_date):
     df = pd.DataFrame(data)
     return df, failed_tickers
 
-# Function to calculate the sum of price * volume
 def calculate_sum(df):
-    if not df.empty:
-        return (df['Price'] * df['Volume']).sum()
-    return 0
+    return (df['Price'] * df['Volume']).sum()
 
-# Function to fetch YPFD/YPF ratio
 def fetch_ypf_ratio(selected_date):
     """
     Fetches the YPFD and YPF prices on the selected date or the closest previous date and calculates the ratio.
@@ -64,16 +55,11 @@ def fetch_ypf_ratio(selected_date):
     if ypf_price is None or ypfd_price is None:
         st.error("Could not retrieve YPF or YPFD.BA data for the selected date.")
         return None
-    if ypf_price == 0:
-        st.error("YPF price is zero, cannot compute ratio.")
-        return None
     return ypfd_price / ypf_price
 
-# Main function for the Streamlit app
 def main():
     st.title("Stock Volume-Weighted Price Comparison")
 
-    # Date picker
     today = datetime.today().date()
     selected_date = st.date_input("Choose a date", today)
     
@@ -81,9 +67,7 @@ def main():
         st.error("Selected date cannot be in the future.")
         return
 
-    # "Enter" button for data fetching
     if st.button("Enter to Fetch Data"):
-        # Define ticker groups
         adrs_tickers = ['BBAR', 'BMA', 'CEPU', 'CRESY', 'EDN', 'GGAL', 'IRS', 'LOMA', 'PAM', 'SUPV', 'TEO', 'TGS', 'YPF']
         panel_lider_tickers = [
             'GGAL.BA', 'YPFD.BA', 'PAMP.BA', 'TXAR.BA', 'ALUA.BA', 'CRES.BA', 'SUPV.BA', 'CEPU.BA',
@@ -101,6 +85,7 @@ def main():
 
         st.markdown("### Fetching ADRs data...")
         adrs_df, adrs_failed = fetch_price_volume(adrs_tickers, selected_date)
+        st.write(f"ADRs Data: {adrs_df}")  # Debugging line
         if not adrs_df.empty:
             adrs_value = calculate_sum(adrs_df)
             st.success(f"ADRs Sum: USD {adrs_value:,.2f}")
@@ -113,6 +98,7 @@ def main():
 
         st.markdown("### Fetching Panel Líder data...")
         panel_lider_df, panel_lider_failed = fetch_price_volume(panel_lider_tickers, selected_date)
+        st.write(f"Panel Líder Data: {panel_lider_df}")  # Debugging line
         if not panel_lider_df.empty:
             panel_lider_sum = calculate_sum(panel_lider_df)
             ypfd_ratio = fetch_ypf_ratio(selected_date)
@@ -131,6 +117,7 @@ def main():
 
         st.markdown("### Fetching Panel General data...")
         panel_general_df, panel_general_failed = fetch_price_volume(panel_general_tickers, selected_date)
+        st.write(f"Panel General Data: {panel_general_df}")  # Debugging line
         if not panel_general_df.empty:
             panel_general_sum = calculate_sum(panel_general_df)
             ypfd_ratio = fetch_ypf_ratio(selected_date)
@@ -156,20 +143,39 @@ def main():
 
         # Display treemap
         st.markdown("### Tree Map of Values")
-        try:
-            fig = px.treemap(
-                treemap_df, 
-                path=['Category'], 
-                values='Value (USD)', 
-                title="Comparison of ADRs, Panel Líder, and Panel General",
-                color='Value (USD)', 
-                color_continuous_scale='Blues',
-                hover_data={'Value (USD)': ':.2f'}
-            )
-            fig.update_traces(root_color='lightblue', selector=dict(type='treemap'))
-            st.plotly_chart(fig)
-        except ZeroDivisionError:
-            st.error("Error displaying tree map. Division by zero occurred.")
+        fig = px.treemap(
+            treemap_df, 
+            path=['Category'], 
+            values='Value (USD)', 
+            title="Comparison of ADRs, Panel Líder, and Panel General",
+            color='Value (USD)', 
+            color_continuous_scale='Blues',
+            hover_data={'Value (USD)': ':.2f'}
+        )
+        fig.update_traces(textinfo="label+value")
+        st.plotly_chart(fig, use_container_width=True)
+
+        # Plot data for comparison
+        st.markdown("### Historical Comparison")
+        comparison_data = {
+            'Category': ['ADRs', 'Panel Líder', 'Panel General'],
+            'Value (USD)': [adrs_value, panel_lider_value, panel_general_value]
+        }
+        comparison_df = pd.DataFrame(comparison_data)
+        
+        # Bar plot
+        fig = px.bar(
+            comparison_df, 
+            x='Category', 
+            y='Value (USD)', 
+            title="Comparison of ADRs, Panel Líder, and Panel General",
+            text='Value (USD)',
+            color='Value (USD)',
+            color_continuous_scale='Blues'
+        )
+        fig.update_traces(texttemplate='%{text:.2s}', textposition='outside')
+        fig.update_layout(showlegend=False)
+        st.plotly_chart(fig, use_container_width=True)
 
 if __name__ == "__main__":
     main()
