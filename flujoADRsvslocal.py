@@ -13,6 +13,7 @@ def get_valid_date(ticker, selected_date):
     try:
         ticker_data = ticker.history(start=start_date, end=end_date)
         if ticker_data.empty:
+            st.warning(f"No data available for {ticker.ticker} between {start_date} and {end_date}.")
             return None, None
         latest_valid_date = ticker_data.index.max()
         price = ticker_data['Adj Close'].loc[latest_valid_date]
@@ -67,7 +68,7 @@ def main():
         st.error("Selected date cannot be in the future.")
         return
 
-    if st.button("Enter to Fetch Data"):
+    if st.button("Fetch Data"):
         adrs_tickers = ['BBAR', 'BMA', 'CEPU', 'CRESY', 'EDN', 'GGAL', 'IRS', 'LOMA', 'PAM', 'SUPV', 'TEO', 'TGS', 'YPF']
         panel_lider_tickers = [
             'GGAL.BA', 'YPFD.BA', 'PAMP.BA', 'TXAR.BA', 'ALUA.BA', 'CRES.BA', 'SUPV.BA', 'CEPU.BA',
@@ -174,7 +175,6 @@ def main():
             color_continuous_scale='Blues'
         )
         fig.update_traces(texttemplate='%{text:.2s}', textposition='outside')
-        fig.update_layout(showlegend=False)
         st.plotly_chart(fig, use_container_width=True)
 
 if __name__ == "__main__":
