@@ -13,11 +13,19 @@ def get_valid_date(ticker, selected_date):
     try:
         ticker_data = ticker.history(start=start_date, end=end_date)
         st.write(f"Fetched data for {ticker.ticker}: {ticker_data.head()}")  # Debugging line
+        
         if ticker_data.empty:
             st.warning(f"No data available for {ticker.ticker} between {start_date} and {end_date}.")
             return None, None
+        
+        # Debug: Print available columns
+        st.write(f"Available columns for {ticker.ticker}: {ticker_data.columns}")
+        
+        # Check if 'Adj Close' exists, if not use the 'Close' column
+        price_col = 'Adj Close' if 'Adj Close' in ticker_data.columns else 'Close'
+        
         latest_valid_date = ticker_data.index.max()
-        price = ticker_data['Adj Close'].loc[latest_valid_date]
+        price = ticker_data[price_col].loc[latest_valid_date]
         volume = ticker_data['Volume'].loc[latest_valid_date]
         return price, volume
     except Exception as e:
@@ -152,10 +160,8 @@ def main():
             values='Value (USD)', 
             title="Comparison of ADRs, Panel Líder, and Panel General",
             color='Value (USD)', 
-            color_continuous_scale='Blues',
-            hover_data={'Value (USD)': ':.2f'}
+            color_continuous_scale='Viridis'
         )
-        fig.update_traces(textinfo="label+value")
         st.plotly_chart(fig, use_container_width=True)
 
 if __name__ == "__main__":
