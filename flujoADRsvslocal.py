@@ -157,7 +157,7 @@ def main():
             color_discrete_map={"ADRs": "blue", "Panel Líder": "green", "Panel General": "red"}
         )
         fig.update_layout(
-            title_text='Comparación de Volumen en Dólares por Acción',
+            title_text='Comparación de Volumen en Dólares total para ADRs/Panel Líder/Panel General',
             title_font_size=title_font_size,
             xaxis_title='Categoría',
             xaxis_title_font_size=label_font_size,
