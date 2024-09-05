@@ -10,7 +10,7 @@ def get_valid_date(ticker, selected_date):
     try:
         ticker_data = ticker.history(start=start_date, end=end_date)
         if ticker_data.empty:
-            st.warning(f"No data available for {ticker.ticker} between {start_date} and {end_date}.")
+            st.warning(f"No hay datos disponibles para {ticker.ticker} entre {start_date} y {end_date}.")
             return None, None
         
         price_col = 'Adj Close' if 'Adj Close' in ticker_data.columns else 'Close'
@@ -20,7 +20,7 @@ def get_valid_date(ticker, selected_date):
         volume = ticker_data['Volume'].loc[latest_valid_date]
         return price, volume
     except Exception as e:
-        st.warning(f"Error fetching data for {ticker.ticker}: {e}")
+        st.warning(f"Error al obtener datos para {ticker.ticker}: {e}")
         return None, None
 
 def fetch_price_volume(tickers, selected_date):
@@ -47,7 +47,7 @@ def fetch_ypf_ratio(selected_date):
     ypfd_price, _ = get_valid_date(ypfd_ticker, selected_date)
     
     if ypf_price is None or ypfd_price is None:
-        st.error("Could not retrieve YPF or YPFD.BA data for the selected date.")
+        st.error("No se pudo recuperar datos de YPF o YPFD.BA para la fecha seleccionada.")
         return None
     return ypfd_price / ypf_price
 
@@ -67,20 +67,20 @@ def add_watermark(fig, text="MTaurus - X:mtaurus_ok"):
     return fig
 
 def main():
-    st.title("Stock Volume-Weighted Price Comparison")
+    st.title("Comparación de Volumen en Dólares por Acción")
 
     today = datetime.today().date()
-    selected_date = st.date_input("Choose a date", today)
+    selected_date = st.date_input("Selecciona una fecha", today)
     
     if selected_date > today:
-        st.error("Selected date cannot be in the future.")
+        st.error("La fecha seleccionada no puede estar en el futuro.")
         return
 
-    title_font_size = st.slider("Title Font Size", 10, 50, 24)
-    axis_font_size = st.slider("Axis Font Size", 10, 50, 18)
-    label_font_size = st.slider("Label Font Size", 10, 50, 14)
+    title_font_size = st.slider("Tamaño de fuente del título", 10, 50, 24)
+    axis_font_size = st.slider("Tamaño de fuente de los ejes", 10, 50, 18)
+    label_font_size = st.slider("Tamaño de fuente de las etiquetas", 10, 50, 14)
 
-    if st.button("Fetch Data"):
+    if st.button("Obtener Datos"):
         adrs_tickers = ['BBAR', 'BMA', 'CEPU', 'CRESY', 'EDN', 'GGAL', 'IRS', 'LOMA', 'PAM', 'SUPV', 'TEO', 'TGS', 'YPF']
         panel_lider_tickers = [
             'GGAL.BA', 'YPFD.BA', 'PAMP.BA', 'TXAR.BA', 'ALUA.BA', 'CRES.BA', 'SUPV.BA', 'CEPU.BA',
@@ -96,72 +96,72 @@ def main():
             'ROSE.BA', 'RIGO.BA', 'DGCE.BA', 'MTR.BA', 'HSAT.BA'
         ]
 
-        st.markdown("### Fetching ADRs data...")
+        st.markdown("### Obtención de datos ADRs...")
         adrs_df, adrs_failed = fetch_price_volume(adrs_tickers, selected_date)
         if not adrs_df.empty:
             adrs_value = calculate_sum(adrs_df)
-            st.success(f"ADRs Sum: USD {adrs_value:,.2f}")
+            st.success(f"Suma ADRs: USD {adrs_value:,.2f}")
         else:
             adrs_value = 0
-            st.warning("No ADRs data available for the selected date.")
+            st.warning("No hay datos disponibles para ADRs en la fecha seleccionada.")
         
         if adrs_failed:
-            st.warning(f"Failed to fetch ADRs tickers: {', '.join(adrs_failed)}")
+            st.warning(f"Fallo al obtener datos de ADRs: {', '.join(adrs_failed)}")
 
-        st.markdown("### Fetching Panel Líder data...")
+        st.markdown("### Obtención de datos Panel Líder...")
         panel_lider_df, panel_lider_failed = fetch_price_volume(panel_lider_tickers, selected_date)
         if not panel_lider_df.empty:
             panel_lider_sum = calculate_sum(panel_lider_df)
             ypfd_ratio = fetch_ypf_ratio(selected_date)
             if ypfd_ratio:
                 panel_lider_value = panel_lider_sum / ypfd_ratio
-                st.success(f"Panel Líder Sum: USD {panel_lider_value:,.2f}")
+                st.success(f"Suma Panel Líder: USD {panel_lider_value:,.2f}")
             else:
                 panel_lider_value = 0
-                st.error("Could not calculate Panel Líder due to YPFD/YPF ratio issue.")
+                st.error("No se pudo calcular el Panel Líder debido a un problema con la razón YPFD/YPF.")
         else:
             panel_lider_value = 0
-            st.warning("No Panel Líder data available for the selected date.")
+            st.warning("No hay datos disponibles para Panel Líder en la fecha seleccionada.")
         
         if panel_lider_failed:
-            st.warning(f"Failed to fetch Panel Líder tickers: {', '.join(panel_lider_failed)}")
+            st.warning(f"Fallo al obtener datos de Panel Líder: {', '.join(panel_lider_failed)}")
 
-        st.markdown("### Fetching Panel General data...")
+        st.markdown("### Obtención de datos Panel General...")
         panel_general_df, panel_general_failed = fetch_price_volume(panel_general_tickers, selected_date)
         if not panel_general_df.empty:
             panel_general_sum = calculate_sum(panel_general_df)
             ypfd_ratio = fetch_ypf_ratio(selected_date)
             if ypfd_ratio:
                 panel_general_value = panel_general_sum / ypfd_ratio
-                st.success(f"Panel General Sum: USD {panel_general_value:,.2f}")
+                st.success(f"Suma Panel General: USD {panel_general_value:,.2f}")
             else:
                 panel_general_value = 0
-                st.error("Could not calculate Panel General due to YPFD/YPF ratio issue.")
+                st.error("No se pudo calcular el Panel General debido a un problema con la razón YPFD/YPF.")
         else:
             panel_general_value = 0
-            st.warning("No Panel General data available for the selected date.")
+            st.warning("No hay datos disponibles para Panel General en la fecha seleccionada.")
         
         if panel_general_failed:
-            st.warning(f"Failed to fetch Panel General tickers: {', '.join(panel_general_failed)}")
+            st.warning(f"Fallo al obtener datos de Panel General: {', '.join(panel_general_failed)}")
 
         if adrs_df.empty and panel_lider_df.empty and panel_general_df.empty:
-            st.warning("No data available for any category.")
+            st.warning("No hay datos disponibles para ninguna categoría.")
             return
 
         fig = px.bar(
             x=["ADRs", "Panel Líder", "Panel General"],
             y=[adrs_value, panel_lider_value, panel_general_value],
-            labels={"x": "Category", "y": "Value in USD"},
-            title="Stock Value Comparison",
+            labels={"x": "Categoría", "y": "Volumen en USD"},
+            title="Comparación de Volumen en Dólares por Acción",
             color=["ADRs", "Panel Líder", "Panel General"],
             color_discrete_map={"ADRs": "blue", "Panel Líder": "green", "Panel General": "red"}
         )
         fig.update_layout(
-            title_text='Stock Value Comparison',
+            title_text='Comparación de Volumen en Dólares por Acción',
             title_font_size=title_font_size,
-            xaxis_title='Category',
+            xaxis_title='Categoría',
             xaxis_title_font_size=label_font_size,
-            yaxis_title='Value in USD',
+            yaxis_title='Volumen en USD',
             yaxis_title_font_size=label_font_size,
             xaxis_tickfont_size=axis_font_size,
             yaxis_tickfont_size=axis_font_size,
